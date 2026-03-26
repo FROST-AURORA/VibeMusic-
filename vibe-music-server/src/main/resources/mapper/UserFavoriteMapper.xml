@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.edu.seig.vibemusic.mapper.UserFavoriteMapper">
+
+    <!-- 查询根据 favoriteStyle 获取对应的 ID -->
+    <select id="getFavoriteIdsByStyle" resultType="java.lang.Long">
+        SELECT id
+        FROM tb_playlist
+        WHERE style IN
+        <foreach collection="favoriteStyles" item="style" open="(" close=")" separator=",">
+            #{style}
+        </foreach>
+    </select>
+
+    <!-- 查询用户收藏的歌曲 ID 列表（支持分页和条件过滤） -->
+    <select id="queryFavoriteSongIds" resultType="java.lang.Long">
+        SELECT uf.song_id
+        FROM tb_user_favorite uf
+        INNER JOIN tb_song s ON uf.song_id = s.id
+        LEFT JOIN tb_artist a ON s.artist_id = a.id
+        WHERE 
+            uf.user_id = #{userId} 
+            AND uf.type = 0
+        <if test="songName != null">
+            AND s.name LIKE CONCAT('%', #{songName}, '%')
+        </if>
+        <if test="artistName != null">
+            AND a.name LIKE CONCAT('%', #{artistName}, '%')
+        </if>
+        <if test="album != null">
+            AND s.album LIKE CONCAT('%', #{album}, '%')
+        </if>
+        ORDER BY uf.create_time DESC
+    </select>
+
+    <!-- 查询用户收藏的歌单 ID 列表（支持分页和条件过滤） -->
+    <select id="queryFavoritePlaylistIds" resultType="java.lang.Long">
+        SELECT uf.playlist_id
+        FROM tb_user_favorite uf
+        INNER JOIN tb_playlist p ON uf.playlist_id = p.id
+        WHERE 
+            uf.user_id = #{userId} 
+            AND uf.type = 1
+        <if test="title != null">
+            AND p.title LIKE CONCAT('%', #{title}, '%')
+        </if>
+        <if test="style != null">
+            AND p.style LIKE CONCAT('%', #{style}, '%')
+        </if>
+        ORDER BY uf.create_time DESC
+    </select>
+
+</mapper>

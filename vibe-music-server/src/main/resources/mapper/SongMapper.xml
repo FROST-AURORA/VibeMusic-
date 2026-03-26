@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.edu.seig.vibemusic.mapper.SongMapper">
+
+    <!-- 定义 ResultMap -->
+    <resultMap id="SongDetailVOResultMap" type="cn.edu.seig.vibemusic.model.vo.SongDetailVO">
+        <id column="songId" property="songId"/>
+        <result column="songName" property="songName"/>
+        <result column="artistName" property="artistName"/>
+        <result column="album" property="album"/>
+        <result column="lyric" property="lyric"/>
+        <result column="duration" property="duration"/>
+        <result column="songCoverUrl" property="coverUrl"/>
+        <result column="audioUrl" property="audioUrl"/>
+        <result column="releaseTime" property="releaseTime"/>
+    </resultMap>
+
+    <!-- 查询歌曲详情（不含评论） -->
+    <select id="getSongDetailById" resultMap="SongDetailVOResultMap">
+        SELECT s.id           AS songId,
+               s.name         AS songName,
+               s.album        AS album,
+               s.lyric        AS lyric,
+               s.duration     AS duration,
+               s.cover_url    AS songCoverUrl,
+               s.audio_url    AS audioUrl,
+               s.release_time AS releaseTime,
+               a.name         AS artistName
+        FROM tb_song s
+                 LEFT JOIN tb_artist a ON s.artist_id = a.id
+        WHERE s.id = #{songId}
+    </select>
+
+    <!-- 根据 id 批量获取歌曲列表（支持批量查询） -->
+    <select id="getSongsByIdS" resultType="cn.edu.seig.vibemusic.model.vo.SongVO">
+        SELECT
+            s.id AS songId,
+            s.name AS songName,
+            s.artist_id AS artistId,
+            s.album,
+            s.lyric,
+            s.duration,
+            s.style,
+            s.cover_url AS coverUrl,
+            s.audio_url AS audioUrl,
+            s.release_time AS releaseTime,
+            a.name AS artistName
+        FROM tb_song s
+        LEFT JOIN tb_artist a ON s.artist_id = a.id
+        WHERE s.id IN
+        <foreach item="id" collection="ids" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY s.release_time DESC
+    </select>
+
+    <!-- 根据用户收藏的歌曲 id 列表获取歌曲风格 ID 列表 -->
+    <select id="getFavoriteSongStyles" resultType="java.lang.Long">
+        SELECT g.style_id
+        FROM tb_genre g
+        WHERE g.song_id IN
+        <foreach item="item" collection="favoriteSongIds" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </select>
+
+    <!-- 根据风格 ID 列表和用户已收藏 ID 列表获取推荐歌曲 ID（仅返回 ID） -->
+    <select id="getRecommendedSongIdsByStyles" resultType="java.lang.Long">
+        SELECT  s.id
+        FROM tb_song s
+        JOIN tb_genre g ON s.id = g.song_id
+        WHERE g.style_id IN
+        <foreach item="styleId" collection="sortedStyleIds" open="(" separator="," close=")">
+            #{styleId}
+        </foreach>
+        AND s.id NOT IN
+        <foreach item="favId" collection="favoriteSongIds" open="(" separator="," close=")">
+            #{favId}
+        </foreach>
+        ORDER BY RAND()
+        LIMIT #{limit}
+    </select>
+
+</mapper>
