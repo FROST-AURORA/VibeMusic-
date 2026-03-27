@@ -61,6 +61,7 @@ public class LoginInterceptor implements HandlerInterceptor {
             return false;
         }
         //如果没有登录，则返回错误信息
+
         sendErrorResult(response, 401, MessageConstant.NOT_LOGIN);
         return false;
     }

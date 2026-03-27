@@ -15,7 +15,10 @@ public class WebConfig implements WebMvcConfigurer {
             "/song/**",
             "/artist/**",
             "/playlist/**",
-            "/banner/**"
+            "/banner/**",
+            "/v3/api-docs/**",
+            "/swagger-ui/**",
+            "/swagger-ui.html"
     };
 
     @Autowired
