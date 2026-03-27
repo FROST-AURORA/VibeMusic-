@@ -9,6 +9,15 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
+    private static final String[] PUBLIC_PATHS = {
+            "/admin/login", "/admin/logout", "/admin/register",
+            "/user/login", "/user/logout", "/user/register", "/user/sendVerificationCode", "/user/resetUserPassword",
+            "/song/**",
+            "/artist/**",
+            "/playlist/**",
+            "/banner/**"
+    };
+
     @Autowired
     private LoginInterceptor loginInterceptor;
 
@@ -17,10 +26,6 @@ public class WebConfig implements WebMvcConfigurer {
         // 登录接口和注册接口不拦截
         registry.addInterceptor(loginInterceptor)
                 .addPathPatterns("/**") // 拦截所有请求
-                .excludePathPatterns(
-                        "/admin/login", "/admin/logout", "/admin/register",
-                        "/user/login", "/user/logout", "/user/register",
-                        "/user/sendVerificationCode", "/user/resetUserPassword"
-                        );
+                .excludePathPatterns(PUBLIC_PATHS);
     }
 }

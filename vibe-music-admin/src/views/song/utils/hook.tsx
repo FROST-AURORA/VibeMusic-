@@ -237,6 +237,7 @@ export function useSong(tableRef: Ref, treeRef: Ref) {
         // 如果返回状态码为 0（成功），且 data 和 items 存在
         pagination.total = result.data.total; // 设置总条目数
         dataList.value = result.data.items.map(item => ({
+          artistId: item.artistId,
           songId: item.songId,
           songName: item.songName,
           artistName: item.artistName,
@@ -293,7 +294,7 @@ export function useSong(tableRef: Ref, treeRef: Ref) {
       props: {
         formInline: {
           title,
-          artistId: form.artistId ?? 0,
+          artistId: row?.artistId ?? form.artistId ?? 0,
           artistName: row?.artistName ?? "",
           songId: row?.songId ?? 0,
           songName: row?.songName ?? "",

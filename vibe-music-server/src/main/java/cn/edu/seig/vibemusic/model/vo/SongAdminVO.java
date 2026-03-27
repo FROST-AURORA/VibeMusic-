@@ -19,6 +19,11 @@ public class SongAdminVO implements Serializable {
     private Long songId;
 
     /**
+     * 歌手 id
+     */
+    private Long artistId;
+
+    /**
      * 歌手
      */
     private String artistName;

@@ -34,6 +34,7 @@ public interface SongMapper extends BaseMapper<Song> {
             (#{songName} IS NULL OR s.name LIKE CONCAT('%', #{songName}, '%'))
             AND (#{artistName} IS NULL OR a.name LIKE CONCAT('%', #{artistName}, '%'))
             AND (#{album} IS NULL OR s.album LIKE CONCAT('%', #{album}, '%'))
+        ORDER BY s.release_time DESC
         """)
     IPage<Long> querySongIds(Page<Long> page,
                              @Param("songName") String songName,

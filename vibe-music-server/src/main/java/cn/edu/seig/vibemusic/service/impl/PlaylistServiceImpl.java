@@ -9,7 +9,6 @@ import cn.edu.seig.vibemusic.model.dto.PlaylistAddDTO;
 import cn.edu.seig.vibemusic.model.dto.PlaylistDTO;
 import cn.edu.seig.vibemusic.model.dto.PlaylistUpdateDTO;
 import cn.edu.seig.vibemusic.model.entity.Playlist;
-import cn.edu.seig.vibemusic.model.entity.UserFavorite;
 import cn.edu.seig.vibemusic.model.vo.CommentVO;
 import cn.edu.seig.vibemusic.model.vo.PlaylistDetailVO;
 import cn.edu.seig.vibemusic.model.vo.PlaylistVO;
@@ -18,7 +17,8 @@ import cn.edu.seig.vibemusic.result.PageResult;
 import cn.edu.seig.vibemusic.result.Result;
 import cn.edu.seig.vibemusic.service.IPlaylistService;
 import cn.edu.seig.vibemusic.service.MinioService;
-import cn.edu.seig.vibemusic.util.CacheHelper;
+import cn.edu.seig.vibemusic.helper.CacheHelper;
+import cn.edu.seig.vibemusic.helper.CacheInvalidationHelper;
 import cn.edu.seig.vibemusic.util.JwtUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -31,14 +31,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -65,6 +62,8 @@ public class PlaylistServiceImpl extends ServiceImpl<PlaylistMapper, Playlist> i
     private MinioService minioService;
     @Autowired
     private CacheHelper cacheHelper;
+    @Autowired
+    private CacheInvalidationHelper cacheInvalidationHelper;
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
     @Autowired
@@ -325,6 +324,7 @@ public class PlaylistServiceImpl extends ServiceImpl<PlaylistMapper, Playlist> i
         if (playlistMapper.updateById(playlist) == 0) {
             return Result.error(MessageConstant.UPDATE + MessageConstant.FAILED);
         }
+        cacheInvalidationHelper.evictPlaylistCache(playlistId);
 
         return Result.success(MessageConstant.UPDATE + MessageConstant.SUCCESS);
     }
@@ -341,6 +341,9 @@ public class PlaylistServiceImpl extends ServiceImpl<PlaylistMapper, Playlist> i
     @CacheEvict(cacheNames = "playlistCache", allEntries = true)
     public Result updatePlaylistCover(Long playlistId, String coverUrl) {
         Playlist playlist = playlistMapper.selectById(playlistId);
+        if (playlist == null) {
+            return Result.error(MessageConstant.PLAYLIST + MessageConstant.NOT_FOUND);
+        }
         String cover = playlist.getCoverUrl();
         if (cover != null && !cover.isEmpty()) {
             minioService.deleteFile(cover);
@@ -350,6 +353,7 @@ public class PlaylistServiceImpl extends ServiceImpl<PlaylistMapper, Playlist> i
         if (playlistMapper.updateById(playlist) == 0) {
             return Result.error(MessageConstant.UPDATE + MessageConstant.FAILED);
         }
+        cacheInvalidationHelper.evictPlaylistCache(playlistId);
 
         return Result.success(MessageConstant.UPDATE + MessageConstant.SUCCESS);
     }
@@ -380,6 +384,7 @@ public class PlaylistServiceImpl extends ServiceImpl<PlaylistMapper, Playlist> i
         if (playlistMapper.deleteById(playlistId) == 0) {
             return Result.error(MessageConstant.DELETE + MessageConstant.FAILED);
         }
+        cacheInvalidationHelper.evictPlaylistCache(playlistId);
 
         return Result.success(MessageConstant.DELETE + MessageConstant.SUCCESS);
     }
@@ -409,6 +414,7 @@ public class PlaylistServiceImpl extends ServiceImpl<PlaylistMapper, Playlist> i
         if (playlistMapper.deleteBatchIds(playlistIds) == 0) {
             return Result.error(MessageConstant.DELETE + MessageConstant.FAILED);
         }
+        cacheInvalidationHelper.evictPlaylistCache(playlistIds);
 
         return Result.success(MessageConstant.DELETE + MessageConstant.SUCCESS);
     }

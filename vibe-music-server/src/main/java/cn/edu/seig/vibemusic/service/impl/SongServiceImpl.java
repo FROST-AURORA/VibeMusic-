@@ -1,9 +1,7 @@
 package cn.edu.seig.vibemusic.service.impl;
 
-import cn.edu.seig.vibemusic.constant.JwtClaimsConstant;
 import cn.edu.seig.vibemusic.constant.MessageConstant;
 import cn.edu.seig.vibemusic.enumeration.LikeStatusEnum;
-import cn.edu.seig.vibemusic.enumeration.RoleEnum;
 import cn.edu.seig.vibemusic.mapper.*;
 import cn.edu.seig.vibemusic.model.dto.SongAddDTO;
 import cn.edu.seig.vibemusic.model.dto.SongAndArtistDTO;
@@ -12,7 +10,6 @@ import cn.edu.seig.vibemusic.model.dto.SongUpdateDTO;
 import cn.edu.seig.vibemusic.model.entity.Genre;
 import cn.edu.seig.vibemusic.model.entity.Song;
 import cn.edu.seig.vibemusic.model.entity.Style;
-import cn.edu.seig.vibemusic.model.entity.UserFavorite;
 import cn.edu.seig.vibemusic.model.vo.CommentVO;
 import cn.edu.seig.vibemusic.model.vo.SongAdminVO;
 import cn.edu.seig.vibemusic.model.vo.SongDetailVO;
@@ -21,15 +18,16 @@ import cn.edu.seig.vibemusic.result.PageResult;
 import cn.edu.seig.vibemusic.result.Result;
 import cn.edu.seig.vibemusic.service.ISongService;
 import cn.edu.seig.vibemusic.service.MinioService;
-import cn.edu.seig.vibemusic.util.CacheHelper;
+import cn.edu.seig.vibemusic.helper.CacheHelper;
+import cn.edu.seig.vibemusic.helper.CacheInvalidationHelper;
 import cn.edu.seig.vibemusic.util.JwtUtil;
-import cn.edu.seig.vibemusic.util.TypeConversionUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheConfig;
@@ -39,7 +37,6 @@ import org.springframework.data.redis.core.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -56,6 +53,7 @@ import static cn.edu.seig.vibemusic.constant.RsdisConstants.*;
  * @author sunpingli
  * @since 2025-01-09
  */
+@Slf4j
 @Service
 @CacheConfig(cacheNames = "songCache")
 public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements ISongService {
@@ -74,6 +72,8 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements IS
     private StringRedisTemplate stringRedisTemplate;
     @Autowired
     private CacheHelper cacheHelper;
+    @Autowired
+    private CacheInvalidationHelper cacheInvalidationHelper;
     @Autowired
     private CommentMapper commentMapper;
 
@@ -157,7 +157,7 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements IS
 
         // 4. 洗牌并截取 20 个 ID
         List<Long> targetIds = new ArrayList<>(cachedSongIds);
-        Collections.shuffle(targetIds);
+        Collections.shuffle(targetIds);//把列表中的歌曲 ID 顺序彻底打乱
         List<Long> resultIds = targetIds.subList(0, Math.min(20, targetIds.size()));
 
         // 5. 补足逻辑
@@ -231,7 +231,7 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements IS
      * @return 歌曲列表
      */
     @Override
-    @Cacheable(key = "#songDTO.pageNum + '-' + #songDTO.pageSize + '-' + #songDTO.songName + '-' + #songDTO.album + '-' + #songDTO.artistId + '-admin'")
+    @Cacheable(key = "#songDTO.pageNum + '-' + #songDTO.pageSize + '-' + #songDTO.songName + '-' + #songDTO.album + '-' + #songDTO.artistId + '-admin-v2'")
     public Result<PageResult<SongAdminVO>> getAllSongsByArtist(SongAndArtistDTO songDTO) {
         // 分页查询
         Page<SongAdminVO> page = new Page<>(songDTO.getPageNum(), songDTO.getPageSize());
@@ -314,6 +314,7 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements IS
         return Result.success(MessageConstant.ADD + MessageConstant.SUCCESS);
     }
 
+
     /**
      * 更新歌曲信息
      *
@@ -359,6 +360,8 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements IS
             }
         }
 
+        cacheInvalidationHelper.evictSongCache(songId);
+
         return Result.success(MessageConstant.UPDATE + MessageConstant.SUCCESS);
     }
 
@@ -374,6 +377,9 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements IS
     @CacheEvict(cacheNames = "songCache", allEntries = true)
     public Result updateSongCover(Long songId, String coverUrl) {
         Song song = songMapper.selectById(songId);
+        if (song == null) {
+            return Result.error(MessageConstant.SONG + MessageConstant.NOT_FOUND);
+        }
         String cover = song.getCoverUrl();
         if (cover != null && !cover.isEmpty()) {
             minioService.deleteFile(cover);
@@ -383,6 +389,8 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements IS
         if (songMapper.updateById(song) == 0) {
             return Result.error(MessageConstant.UPDATE + MessageConstant.FAILED);
         }
+
+        cacheInvalidationHelper.evictSongCache(songId);
 
         return Result.success(MessageConstant.UPDATE + MessageConstant.SUCCESS);
     }
@@ -399,6 +407,9 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements IS
     @CacheEvict(cacheNames = "songCache", allEntries = true)
     public Result updateSongAudio(Long songId, String audioUrl, String duration) {
         Song song = songMapper.selectById(songId);
+        if (song == null) {
+            return Result.error(MessageConstant.SONG + MessageConstant.NOT_FOUND);
+        }
         String audio = song.getAudioUrl();
         if (audio != null && !audio.isEmpty()) {
             minioService.deleteFile(audio);
@@ -408,6 +419,8 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements IS
         if (songMapper.updateById(song) == 0) {
             return Result.error(MessageConstant.UPDATE + MessageConstant.FAILED);
         }
+
+        cacheInvalidationHelper.evictSongCache(songId);
 
         return Result.success(MessageConstant.UPDATE + MessageConstant.SUCCESS);
     }
@@ -439,6 +452,8 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements IS
         if (songMapper.deleteById(songId) == 0) {
             return Result.error(MessageConstant.DELETE + MessageConstant.FAILED);
         }
+
+        cacheInvalidationHelper.evictSongCache(songId);
 
         return Result.success(MessageConstant.DELETE + MessageConstant.SUCCESS);
     }
@@ -476,6 +491,8 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements IS
         if (songMapper.deleteByIds(songIds) == 0) {
             return Result.error(MessageConstant.DELETE + MessageConstant.FAILED);
         }
+
+        cacheInvalidationHelper.evictSongCache(songIds);
 
         return Result.success(MessageConstant.DELETE + MessageConstant.SUCCESS);
     }

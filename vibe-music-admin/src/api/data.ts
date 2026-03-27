@@ -2,6 +2,12 @@ import { http } from "@/utils/http";
 import type { Result } from "@/api/system";
 import { getToken } from "@/utils/auth";
 
+const buildParams = <T extends Record<string, unknown>>(params: T) => {
+  return Object.fromEntries(
+    Object.entries(params).filter(([, value]) => value !== undefined)
+  );
+};
+
 /** 获取用户数量 */
 export const getAllUsersCount = () => {
   const userData = getToken();
@@ -21,7 +27,7 @@ export const getAllArtistsCount = (gender?: number, area?: string) => {
       "Content-Type": "application/json",
       Authorization: userData.accessToken
     },
-    params: { gender, area }
+    params: buildParams({ gender, area })
   });
 };
 
@@ -33,7 +39,7 @@ export const getAllSongsCount = (style?: string) => {
       "Content-Type": "application/json",
       Authorization: userData.accessToken
     },
-    params: { style }
+    params: buildParams({ style })
   });
 };
 
@@ -45,6 +51,6 @@ export const getAllPlaylistsCount = (style?: string) => {
       "Content-Type": "application/json",
       Authorization: userData.accessToken
     },
-    params: { style }
+    params: buildParams({ style })
   });
 };
