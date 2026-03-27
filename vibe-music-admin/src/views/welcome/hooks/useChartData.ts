@@ -6,15 +6,60 @@ import {
 } from "@/api/data";
 import { onMounted, ref } from "vue";
 import { message } from "@/utils/message";
+import type { Result } from "@/api/system";
+
+const toCount = (response?: Result) => {
+  if (!response || Number(response.code) !== 0) {
+    return 0;
+  }
+
+  const dataValue =
+    typeof response.data === "object" &&
+    response.data !== null &&
+    "data" in response.data
+      ? (response.data as { data: unknown }).data
+      : response.data;
+  if (typeof dataValue === "number") {
+    return dataValue;
+  }
+  if (typeof dataValue === "string") {
+    const numericValue = Number(dataValue);
+    return Number.isNaN(numericValue) ? 0 : numericValue;
+  }
+  if (
+    typeof dataValue === "object" &&
+    dataValue !== null &&
+    "value" in dataValue
+  ) {
+    const numericValue = Number((dataValue as { value: unknown }).value);
+    return Number.isNaN(numericValue) ? 0 : numericValue;
+  }
+  if (
+    typeof dataValue === "object" &&
+    dataValue !== null &&
+    "count" in dataValue
+  ) {
+    const numericValue = Number((dataValue as { count: unknown }).count);
+    return Number.isNaN(numericValue) ? 0 : numericValue;
+  }
+  if (
+    typeof dataValue === "object" &&
+    dataValue !== null &&
+    "total" in dataValue
+  ) {
+    const numericValue = Number((dataValue as { total: unknown }).total);
+    return Number.isNaN(numericValue) ? 0 : numericValue;
+  }
+
+  return 0;
+};
 
 export default () => {
-  /** 总数 */
   const userCount = ref<number>(0);
   const artistCount = ref<number>(0);
   const songCount = ref<number>(0);
   const playlistCount = ref<number>(0);
 
-  /** 歌曲类型 */
   const westernPopCount = ref<number>(0);
   const chinesePopCount = ref<number>(0);
   const cantonesePopCount = ref<number>(0);
@@ -26,7 +71,6 @@ export default () => {
   const jazzCount = ref<number>(0);
   const lightCount = ref<number>(0);
 
-  /** 歌手地区分布 */
   const countAmerica = ref<number>(0);
   const countChina = ref<number>(0);
   const countKorea = ref<number>(0);
@@ -34,7 +78,6 @@ export default () => {
   const countGermany = ref<number>(0);
   const countBritain = ref<number>(0);
 
-  /** 歌手性别 */
   const maleCount = ref<number>(0);
   const femaleCount = ref<number>(0);
 
@@ -52,119 +95,19 @@ export default () => {
   ];
 
   const artistAreas = ["美国", "中国", "韩国", "日本", "德国", "英国"];
-
   const artistGenders = [0, 1];
 
-  const fetchData = async () => {
-    try {
-      // 使用 map 函数生成歌曲类型查询的 Promise 数组
-      const songTypePromises = songTypes.map(type => getAllSongsCount(type));
-      const artistAreasPromises = artistAreas.map(area =>
-        getAllArtistsCount(undefined, area)
-      );
-      const artistGendersPromises = artistGenders.map(gender =>
-        getAllArtistsCount(gender)
-      );
-
-      // 使用 Promise.all 并行执行所有 API 请求
-      const allResponses = await Promise.all([
-        getAllUsersCount(),
-        getAllArtistsCount(),
-        getAllSongsCount(),
-        getAllPlaylistsCount(),
-        ...songTypePromises,
-        ...artistAreasPromises,
-        ...artistGendersPromises
-      ]);
-
-      // 手动拆分数据
-      const userRes = allResponses[0];
-      const artistRes = allResponses[1];
-      const songRes = allResponses[2];
-      const playlistRes = allResponses[3];
-
-      // 根据 songTypes 长度，切割歌曲类型的统计数据
-      const songTypeRes = allResponses.slice(4, 4 + songTypes.length);
-
-      // 根据 artistAreas 长度，切割歌手地区统计数据
-      const artistAreaRes = allResponses.slice(
-        4 + songTypes.length,
-        4 + songTypes.length + artistAreas.length
-      );
-
-      // 获取歌手性别统计数据
-      const artistGenderRes = allResponses.slice(
-        4 + songTypes.length + artistAreas.length
-      );
-
-      // 将所有 API 响应放入一个数组
-      const responses = [
-        userRes,
-        artistRes,
-        songRes,
-        playlistRes,
-        ...songTypeRes,
-        ...artistAreaRes,
-        ...artistGenderRes
-      ];
-
-      // 将所有计数器 ref 对象放入一个数组
-      const counts = [
-        userCount,
-        artistCount,
-        songCount,
-        playlistCount,
-        westernPopCount,
-        chinesePopCount,
-        cantonesePopCount,
-        koreanPopCount,
-        classicCount,
-        hiphopCount,
-        rockCount,
-        electronicCount,
-        jazzCount,
-        lightCount,
-        countAmerica,
-        countChina,
-        countKorea,
-        countJapan,
-        countGermany,
-        countBritain,
-        maleCount,
-        femaleCount
-      ];
-
-      let allSuccess = true;
-
-      // 遍历所有 API 响应，并更新计数器
-      responses.forEach((response, index) => {
-        // 检查响应是否有效
-        if (
-          !response ||
-          response.code !== 0 ||
-          isNaN(Number(response.data)) // 确保 response.data 可以转换成数字
-        ) {
-          allSuccess = false;
-          console.error(
-            `获取第 ${index + 1} 个数据失败，返回数据错误:`,
-            response
-          );
-          return;
-        } else {
-          // 更新计数器
-          counts[index].value = Number(response.data);
-        }
-      });
-
-      // 如果所有请求都成功，则记录计数器值，否则重置计数器
-      if (!allSuccess) {
-        resetCounts();
-      }
-    } catch (error) {
-      console.error("获取数据失败:", error);
-      message("会话过期，请重新登录", { type: "error" });
-      resetCounts();
+  const assignSettledCount = (
+    result: PromiseSettledResult<Result>,
+    target: { value: number }
+  ) => {
+    if (result.status !== "fulfilled") {
+      console.error("统计请求失败:", result.reason);
+      target.value = 0;
+      return;
     }
+
+    target.value = toCount(result.value);
   };
 
   const resetCounts = () => {
@@ -192,14 +135,70 @@ export default () => {
     femaleCount.value = 0;
   };
 
-  // const logCounts = () => {
-  //   console.log(`用户数量: ${userCount.value}`);
-  //   console.log(`歌手数量: ${artistCount.value}`);
-  //   console.log(`歌曲数量: ${songCount.value}`);
-  //   console.log(`歌单数量: ${playlistCount.value}`);
-  // };
+  const fetchSummaryCounts = async () => {
+    try {
+      const summaryResults = await Promise.allSettled([
+        getAllUsersCount(),
+        getAllArtistsCount(),
+        getAllSongsCount(),
+        getAllPlaylistsCount()
+      ]);
 
-  onMounted(fetchData);
+      assignSettledCount(summaryResults[0], userCount);
+      assignSettledCount(summaryResults[1], artistCount);
+      assignSettledCount(summaryResults[2], songCount);
+      assignSettledCount(summaryResults[3], playlistCount);
+    } catch (error) {
+      console.error("获取首页总数失败:", error);
+      message("会话过期，请重新登录", { type: "error" });
+      userCount.value = 0;
+      artistCount.value = 0;
+      songCount.value = 0;
+      playlistCount.value = 0;
+    }
+  };
+
+  const fetchChartCounts = async () => {
+    try {
+      const chartResults = await Promise.allSettled([
+        ...songTypes.map(type => getAllSongsCount(type)),
+        ...artistAreas.map(area => getAllArtistsCount(undefined, area)),
+        ...artistGenders.map(gender => getAllArtistsCount(gender))
+      ]);
+
+      const counts = [
+        westernPopCount,
+        chinesePopCount,
+        cantonesePopCount,
+        koreanPopCount,
+        classicCount,
+        hiphopCount,
+        rockCount,
+        electronicCount,
+        jazzCount,
+        lightCount,
+        countAmerica,
+        countChina,
+        countKorea,
+        countJapan,
+        countGermany,
+        countBritain,
+        maleCount,
+        femaleCount
+      ];
+
+      chartResults.forEach((result, index) => {
+        assignSettledCount(result, counts[index]);
+      });
+    } catch (error) {
+      console.error("获取图表统计失败:", error);
+    }
+  };
+
+  onMounted(() => {
+    fetchSummaryCounts();
+    fetchChartCounts();
+  });
 
   return {
     userCount,

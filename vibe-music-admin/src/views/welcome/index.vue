@@ -102,12 +102,7 @@ const pieChartData2 = ref([
           </div>
           <div class="flex justify-between items-start mt-3">
             <div class="w-1/2">
-              <ReNormalCountTo
-                :duration="2200"
-                :fontSize="'2.5em'"
-                :startVal="100"
-                :endVal="userCount"
-              />
+              <span class="count-value">{{ userCount }}</span>
             </div>
             <ChartLine
               class="!w-1/2"
@@ -157,12 +152,7 @@ const pieChartData2 = ref([
           </div>
           <div class="flex justify-between items-start mt-3">
             <div class="w-1/2">
-              <ReNormalCountTo
-                :duration="2200"
-                :fontSize="'2.5em'"
-                :startVal="100"
-                :endVal="artistCount"
-              />
+              <span class="count-value">{{ artistCount }}</span>
             </div>
             <ChartLine
               class="!w-1/2"
@@ -208,12 +198,7 @@ const pieChartData2 = ref([
           </div>
           <div class="flex justify-between items-start mt-3">
             <div class="w-1/2">
-              <ReNormalCountTo
-                :duration="2200"
-                :fontSize="'2.5em'"
-                :startVal="100"
-                :endVal="songCount"
-              />
+              <span class="count-value">{{ songCount }}</span>
             </div>
             <ChartLine
               class="!w-1/2"
@@ -259,12 +244,7 @@ const pieChartData2 = ref([
           </div>
           <div class="flex justify-between items-start mt-3">
             <div class="w-1/2">
-              <ReNormalCountTo
-                :duration="2200"
-                :fontSize="'2.5em'"
-                :startVal="100"
-                :endVal="playlistCount"
-              />
+              <span class="count-value">{{ playlistCount }}</span>
             </div>
             <ChartLine
               class="!w-1/2"
@@ -381,5 +361,11 @@ const pieChartData2 = ref([
 
 .bar-position {
   margin-top: 18px;
+}
+
+.count-value {
+  font-size: 2.5em;
+  line-height: 1;
+  font-weight: 600;
 }
 </style>

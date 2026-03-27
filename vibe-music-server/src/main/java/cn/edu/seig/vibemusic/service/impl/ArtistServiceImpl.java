@@ -9,7 +9,6 @@ import cn.edu.seig.vibemusic.model.dto.ArtistAddDTO;
 import cn.edu.seig.vibemusic.model.dto.ArtistDTO;
 import cn.edu.seig.vibemusic.model.dto.ArtistUpdateDTO;
 import cn.edu.seig.vibemusic.model.entity.Artist;
-import cn.edu.seig.vibemusic.model.entity.UserFavorite;
 import cn.edu.seig.vibemusic.model.vo.ArtistDetailVO;
 import cn.edu.seig.vibemusic.model.vo.ArtistNameVO;
 import cn.edu.seig.vibemusic.model.vo.ArtistVO;
@@ -18,13 +17,10 @@ import cn.edu.seig.vibemusic.result.PageResult;
 import cn.edu.seig.vibemusic.result.Result;
 import cn.edu.seig.vibemusic.service.IArtistService;
 import cn.edu.seig.vibemusic.service.MinioService;
-import cn.edu.seig.vibemusic.util.CacheHelper;
+import cn.edu.seig.vibemusic.helper.CacheHelper;
+import cn.edu.seig.vibemusic.helper.CacheInvalidationHelper;
 import cn.edu.seig.vibemusic.util.JwtUtil;
-import cn.hutool.json.JSONUtil;
-import org.springframework.data.redis.core.StringRedisTemplate;
 
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -39,8 +35,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -63,7 +57,7 @@ public class ArtistServiceImpl extends ServiceImpl<ArtistMapper, Artist> impleme
     @Autowired
     private CacheHelper cacheHelper;
     @Autowired
-    private StringRedisTemplate stringRedisTemplate;
+    private CacheInvalidationHelper cacheInvalidationHelper;
 
     /**
      * 获取所有歌手列表
@@ -281,6 +275,7 @@ public class ArtistServiceImpl extends ServiceImpl<ArtistMapper, Artist> impleme
         if (artistMapper.updateById(artist) == 0) {
             return Result.error(MessageConstant.UPDATE + MessageConstant.FAILED);
         }
+        cacheInvalidationHelper.evictArtistCache(artistId);
 
         return Result.success(MessageConstant.UPDATE + MessageConstant.SUCCESS);
     }
@@ -297,6 +292,9 @@ public class ArtistServiceImpl extends ServiceImpl<ArtistMapper, Artist> impleme
     @CacheEvict(cacheNames = "artistCache", allEntries = true)
     public Result updateArtistAvatar(Long artistId, String avatar) {
         Artist artist = artistMapper.selectById(artistId);
+        if (artist == null) {
+            return Result.error(MessageConstant.ARTIST + MessageConstant.NOT_FOUND);
+        }
         //根据id获取头像地址
         String avatarUrl = artist.getAvatar();
         if (avatarUrl != null && !avatarUrl.isEmpty()) {
@@ -307,6 +305,7 @@ public class ArtistServiceImpl extends ServiceImpl<ArtistMapper, Artist> impleme
         if (artistMapper.updateById(artist) == 0) {
             return Result.error(MessageConstant.UPDATE + MessageConstant.FAILED);
         }
+        cacheInvalidationHelper.evictArtistCache(artistId);
 
         return Result.success(MessageConstant.UPDATE + MessageConstant.SUCCESS);
     }
@@ -337,6 +336,7 @@ public class ArtistServiceImpl extends ServiceImpl<ArtistMapper, Artist> impleme
         if (artistMapper.deleteById(artistId) == 0) {
             return Result.error(MessageConstant.DELETE + MessageConstant.FAILED);
         }
+        cacheInvalidationHelper.evictArtistCache(artistId);
 
         return Result.success(MessageConstant.DELETE + MessageConstant.SUCCESS);
     }
@@ -367,6 +367,7 @@ public class ArtistServiceImpl extends ServiceImpl<ArtistMapper, Artist> impleme
         if (artistMapper.deleteByIds(artistIds) == 0) {
             return Result.error(MessageConstant.DELETE + MessageConstant.FAILED);
         }
+        cacheInvalidationHelper.evictArtistCache(artistIds);
 
         return Result.success(MessageConstant.DELETE + MessageConstant.SUCCESS);
     }

@@ -1,4 +1,4 @@
-package cn.edu.seig.vibemusic.util;
+package cn.edu.seig.vibemusic.helper;
 
 
 import cn.edu.seig.vibemusic.enumeration.LikeStatusEnum;
@@ -10,6 +10,7 @@ import cn.edu.seig.vibemusic.model.vo.ArtistVO;
 import cn.edu.seig.vibemusic.model.vo.CommentVO;
 import cn.edu.seig.vibemusic.model.vo.PlaylistVO;
 import cn.edu.seig.vibemusic.model.vo.SongVO;
+import cn.edu.seig.vibemusic.util.RedisLock;
 import cn.hutool.json.JSONUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisCallback;
@@ -22,7 +23,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static cn.edu.seig.vibemusic.constant.RsdisConstants.*;
@@ -372,7 +372,7 @@ public class CacheHelper {
                     if ("null".equals(json)) return null;
                     return JSONUtil.toBean(json, clazz);
                 }
-                // 4️⃣ 查数据库
+                // 4️⃣ 没命中查数据库
                 T data = dbFallback.apply(id);
                 if (data == null) {
                     // ⭐ 防穿透

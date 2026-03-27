@@ -45,14 +45,9 @@ watch(() => currentTrack.value.id, async (newId) => {
         } else {
           console.error('歌曲详情数据格式不正确')
         }
-      } else {
-        // 后端返回错误（如歌曲不存在）
-        console.warn('获取歌曲详情失败:', res.message || '未知错误')
       }
-    } catch (error: any) {
-      // 网络错误或 HTTP 错误（401、404 等）
-      console.error('获取歌曲详情失败:', error.message || error)
-      // 不弹窗打扰用户，静默失败
+    } catch (error) {
+      console.error('获取歌曲详情失败:', error)
     }
   }
 }, { immediate: true })
