@@ -20,6 +20,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static cn.edu.seig.vibemusic.constant.RsdisConstants.LOGIN_TOKEN_TTL_HOURS;
+
 /**
  * <p>
  * 服务实现类
@@ -84,7 +86,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             String token = JwtUtil.generateToken(claims);
 
             // 将token存入redis
-            stringRedisTemplate.opsForValue().set(token, token, 6, TimeUnit.HOURS);
+            stringRedisTemplate.opsForValue().set(token, token, LOGIN_TOKEN_TTL_HOURS, TimeUnit.HOURS);
 
             return Result.success(MessageConstant.LOGIN + MessageConstant.SUCCESS, token);
         }

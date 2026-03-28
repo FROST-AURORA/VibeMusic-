@@ -38,6 +38,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static cn.edu.seig.vibemusic.constant.RsdisConstants.LOGIN_TOKEN_TTL_HOURS;
+import static cn.edu.seig.vibemusic.constant.RsdisConstants.VERIFICATION_CODE_TTL_MINUTES;
+
 /**
  * <p>
  * 服务实现类
@@ -73,7 +76,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         }
 
         // 将验证码存储到Redis中，设置过期时间为5分钟
-        stringRedisTemplate.opsForValue().set("verificationCode:" + email, verificationCode, 5, TimeUnit.MINUTES);
+        stringRedisTemplate.opsForValue().set(
+                "verificationCode:" + email,
+                verificationCode,
+                VERIFICATION_CODE_TTL_MINUTES,
+                TimeUnit.MINUTES
+        );
         return Result.success(MessageConstant.EMAIL_SEND_SUCCESS);
     }
 
@@ -152,7 +160,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             String token = JwtUtil.generateToken(claims);
 
             // 将token存入redis
-            stringRedisTemplate.opsForValue().set(token, token, 6, TimeUnit.HOURS);
+            stringRedisTemplate.opsForValue().set(token, token, LOGIN_TOKEN_TTL_HOURS, TimeUnit.HOURS);
 
             return Result.success(MessageConstant.LOGIN + MessageConstant.SUCCESS, token);
         }

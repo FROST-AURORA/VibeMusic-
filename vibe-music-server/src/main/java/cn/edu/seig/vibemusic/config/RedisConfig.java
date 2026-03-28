@@ -19,6 +19,8 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.time.Duration;
 
+import static cn.edu.seig.vibemusic.constant.RsdisConstants.SPRING_CACHE_TTL_HOURS;
+
 @Configuration
 public class RedisConfig {
 
@@ -41,7 +43,6 @@ public class RedisConfig {
     public RedisTemplate<Object, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
         RedisTemplate<Object, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
-        // 使用自定义的 Jackson2JsonRedisSerializer
         template.setDefaultSerializer(jackson2JsonRedisSerializer());
         return template;
     }
@@ -51,14 +52,11 @@ public class RedisConfig {
      */
     @Bean
     public RedisCacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
-        // Key 序列化器
         RedisSerializer<String> stringSerializer = new StringRedisSerializer();
-        // Value 序列化器
         Jackson2JsonRedisSerializer<Object> valueSerializer = jackson2JsonRedisSerializer();
 
-        // 配置缓存的序列化方式
         RedisCacheConfiguration cacheConfig = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofHours(6)) // 所有通过 Spring Cache 注解，缓存过期时间 6 小时
+                .entryTtl(Duration.ofHours(SPRING_CACHE_TTL_HOURS))
                 .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(stringSerializer))
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(valueSerializer));
 
@@ -66,6 +64,4 @@ public class RedisConfig {
                 .cacheDefaults(cacheConfig)
                 .build();
     }
-
-
 }

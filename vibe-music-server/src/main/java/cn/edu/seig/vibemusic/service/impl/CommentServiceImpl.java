@@ -41,9 +41,9 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     private StringRedisTemplate stringRedisTemplate;
 
     // 基础过期时间：24 小时
-    private static final long BASE_EXPIRE_TIME = 86400L;
+    private static final long BASE_EXPIRE_TIME = COMMENT_LIKE_CACHE_TTL_SECONDS;
     // 最大随机偏移：1 小时
-    private static final long MAX_RANDOM_OFFSET = 3600L;
+    private static final long MAX_RANDOM_OFFSET = COMMENT_LIKE_CACHE_RANDOM_OFFSET_SECONDS;
 
 
     private static final DefaultRedisScript<Long> LIKE_SCRIPT;

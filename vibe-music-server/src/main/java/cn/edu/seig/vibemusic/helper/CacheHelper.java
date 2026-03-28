@@ -101,7 +101,8 @@ public class CacheHelper {
             // 4. Pipeline 批量回写 Redis，执行 Redis 管道操作
             stringRedisTemplate.executePipelined((RedisCallback<Object>) connection -> {
                 for (Map.Entry<String, String> entry : waitToCache.entrySet()) {
-                    long ttl = 60L + ThreadLocalRandom.current().nextInt(30);
+                    long ttl = DETAIL_CACHE_TTL_MINUTES +
+                            ThreadLocalRandom.current().nextInt(DETAIL_CACHE_TTL_RANDOM_BOUND_MINUTES);
                     connection.setEx(entry.getKey().getBytes(StandardCharsets.UTF_8),
                             ttl * 60,
                             entry.getValue().getBytes(StandardCharsets.UTF_8));
@@ -188,7 +189,7 @@ public class CacheHelper {
         }
 
         // 4. 设置统一的过期时间
-        stringRedisTemplate.expire(redisKey, 24, TimeUnit.HOURS);
+        stringRedisTemplate.expire(redisKey, FAVORITE_CACHE_TTL_HOURS, TimeUnit.HOURS);
     }
 
     /**
@@ -361,7 +362,7 @@ public class CacheHelper {
             }
             return JSONUtil.toBean(json, clazz);
         }
-        String lockValue = redisLock.tryLock(key, 10);
+        String lockValue = redisLock.tryLock(key, LOCK_TTL_SECONDS);
         // 2️⃣ 尝试加锁
         if (lockValue!= null) {
             try {
@@ -376,11 +377,12 @@ public class CacheHelper {
                 T data = dbFallback.apply(id);
                 if (data == null) {
                     // ⭐ 防穿透
-                    stringRedisTemplate.opsForValue().set(key, "null", 5, TimeUnit.MINUTES);
+                    stringRedisTemplate.opsForValue().set(key, "null", NULL_CACHE_TTL_MINUTES, TimeUnit.MINUTES);
                     return null;
                 }
                 // 5️⃣ 写缓存（随机TTL防雪崩）
-                long ttl = 60 + ThreadLocalRandom.current().nextInt(30);
+                long ttl = DETAIL_CACHE_TTL_MINUTES +
+                        ThreadLocalRandom.current().nextInt(DETAIL_CACHE_TTL_RANDOM_BOUND_MINUTES);
                 stringRedisTemplate.opsForValue().set(
                         key,
                         JSONUtil.toJsonStr(data),

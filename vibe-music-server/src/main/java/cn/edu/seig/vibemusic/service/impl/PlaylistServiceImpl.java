@@ -145,7 +145,12 @@ public class PlaylistServiceImpl extends ServiceImpl<PlaylistMapper, Playlist> i
             cachedPlaylistIds = playlistMapper.getRecommendedPlaylistsIdsByStyles(sortedStyleIds, favoriteIds, 40);
 
             // 6. 缓存推荐候选集 30 分钟
-            stringRedisTemplate.opsForValue().set(redisKey, JSONUtil.toJsonStr(cachedPlaylistIds), 30, TimeUnit.MINUTES);
+            stringRedisTemplate.opsForValue().set(
+                    redisKey,
+                    JSONUtil.toJsonStr(cachedPlaylistIds),
+                    RECOMMEND_PLAYLIST_TTL_MINUTES,
+                    TimeUnit.MINUTES
+            );
         }
 
         // 7. 洗牌并截取 10 个 ID

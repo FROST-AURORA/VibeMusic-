@@ -151,7 +151,8 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements IS
             cachedSongIds = songMapper.getRecommendedSongIdsByStyles(sortedStyleIds, favoriteSongIds, 80);
 
             // 缓存 ID 列表 30 分钟
-            long randomTtl = 30L + ThreadLocalRandom.current().nextInt(15); // 30-45分钟
+            long randomTtl = RECOMMEND_SONG_TTL_MINUTES +
+                    ThreadLocalRandom.current().nextInt(RECOMMEND_SONG_TTL_RANDOM_BOUND_MINUTES);
             stringRedisTemplate.opsForValue().set(redisKey, JSONUtil.toJsonStr(cachedSongIds), randomTtl, TimeUnit.MINUTES);
         }
 
