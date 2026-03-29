@@ -56,7 +56,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     private static final DefaultRedisScript<Long> UNLIKE_SCRIPT;
     static {
         UNLIKE_SCRIPT = new DefaultRedisScript<>();
-        UNLIKE_SCRIPT.setLocation(new ClassPathResource("unlike.lua"));
+        UNLIKE_SCRIPT.setLocation(new ClassPathResource("cancel.lua"));
         UNLIKE_SCRIPT.setResultType(Long.class);
     }
 
