@@ -47,8 +47,11 @@ import static cn.edu.seig.vibemusic.constant.RsdisConstants.NULL_CACHE_TTL_MINUT
 @Component
 public class CacheHelper {
 
+    //最大等待时间
     private static final long LOCK_WAIT_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(LOCK_TTL_SECONDS);
+    //基础休眠时间
     private static final long LOCK_RETRY_BASE_SLEEP_MILLIS = 20L;
+    //随机休眠上限
     private static final int LOCK_RETRY_RANDOM_BOUND_MILLIS = 30;
     private static final String NULL_VALUE = "null";
 
@@ -71,11 +74,11 @@ public class CacheHelper {
      * 最后使用 Pipeline 回填缓存，并为不存在的数据写入空值占位。
      */
     private <T> List<T> getDetailsBatchInternal(
-            List<Long> ids,
-            String keyPrefix,
-            Class<T> clazz,
-            Function<List<Long>, List<T>> dbLookup,
-            Function<T, Long> idExtractor
+            List<Long> ids, //ID列表
+            String keyPrefix, //缓存键前缀
+            Class<T> clazz, //缓存值类型
+            Function<List<Long>, List<T>> dbLookup, //数据库根据id查询数据
+            Function<T, Long> idExtractor //获取缓存值中的ID
     ) {
         if (ids == null || ids.isEmpty()) {
             return Collections.emptyList();
@@ -84,8 +87,8 @@ public class CacheHelper {
         List<String> keys = ids.stream().map(id -> keyPrefix + id).toList();
         List<String> jsonList = stringRedisTemplate.opsForValue().multiGet(keys);
 
-        Map<Long, T> resultMap = new HashMap<>();
-        List<Long> missingIds = new ArrayList<>();
+        Map<Long, T> resultMap = new HashMap<>(); //缓存结果
+        List<Long> missingIds = new ArrayList<>(); //未命中的ID集合
 
         for (int i = 0; i < ids.size(); i++) {
             String json = jsonList != null ? jsonList.get(i) : null;
@@ -100,9 +103,10 @@ public class CacheHelper {
 
         if (!missingIds.isEmpty()) {
             List<T> dbResults = dbLookup.apply(missingIds);
-            Map<String, String> waitToCache = new HashMap<>();
-            Set<Long> dbIds = new HashSet<>();
+            Map<String, String> waitToCache = new HashMap<>(); //等待缓存的键值对
+            Set<Long> dbIds = new HashSet<>(); //批量回源数据库的ID集合
 
+            //批量回源数据库
             if (dbResults != null) {
                 for (T item : dbResults) {
                     Long id = idExtractor.apply(item);
@@ -112,6 +116,7 @@ public class CacheHelper {
                 }
             }
 
+            //批量写入空值占位
             for (Long id : missingIds) {
                 if (!dbIds.contains(id)) {
                     waitToCache.put(keyPrefix + id, NULL_VALUE);
@@ -176,7 +181,7 @@ public class CacheHelper {
                 ArtistVO::getArtistId
         );
     }
-
+    /*********************************************************************************************************/
     /**
      * 预热用户收藏缓存。
      * 如果缓存不存在，则从数据库加载收藏 ID 集合并写入 Redis。
@@ -219,6 +224,8 @@ public class CacheHelper {
         String setKey = FAV_PLAYLIST + userId;
         ensureFavoriteCacheInternal(setKey, userId, userFavoriteMapper::getUserFavoritePlaylistIds);
     }
+
+    /***********************************************************************************************/
 
     /**
      * 批量处理评论点赞信息。
@@ -267,16 +274,18 @@ public class CacheHelper {
         }
     }
 
+    /***********************************************************************************************/
+
     /**
      * 批量检查点赞或收藏状态。
      */
     private <T> void batchCheckInternal(
-            List<T> items,
-            Long userId,
+            List<T> items, //要检查的列表
+            Long userId, //用户ID
             String redisKey,
-            Runnable cacheEnsurer,
-            Function<T, Long> idExtractor,
-            BiConsumer<T, Boolean> action
+            Runnable cacheEnsurer, //缓存预热方法
+            Function<T, Long> idExtractor, //获取ID方法
+            BiConsumer<T, Boolean> action //处理结果方法
     ) {
         if (userId == null || items == null || items.isEmpty()) {
             return;
@@ -286,7 +295,7 @@ public class CacheHelper {
 
         List<String> idStrList = items.stream()
                 .map(idExtractor)
-                .filter(Objects::nonNull)
+                .filter(Objects::nonNull) // 过滤掉 null ID
                 .map(String::valueOf)
                 .toList();
 
@@ -331,6 +340,8 @@ public class CacheHelper {
                 }
         );
     }
+
+    /*****************************************************************************************************/
 
     /**
      * 单个 Key 查询，使用分布式互斥锁防止缓存击穿。

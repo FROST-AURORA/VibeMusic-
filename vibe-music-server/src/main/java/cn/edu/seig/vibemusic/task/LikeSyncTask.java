@@ -55,7 +55,7 @@ public class LikeSyncTask {
             //创建一个"扫描规则"
             ScanOptions options = ScanOptions.scanOptions()
                     .match(COMMENT_LIKE_COUNT + "*")
-                    .count(100)
+                    .count(100) //避免一次性取出太多数据导致 Redis 卡顿
                     .build();
 
             List<Comment> updateList = new ArrayList<>();
@@ -72,7 +72,7 @@ public class LikeSyncTask {
                             comment.setLikeCount(Long.valueOf(countStr));
                             updateList.add(comment);
                         }
-
+                        //攒够 500 条再一次性更新
                         if (updateList.size() >= 500) {
                             commentService.updateBatchById(updateList);
                             updateList.clear();

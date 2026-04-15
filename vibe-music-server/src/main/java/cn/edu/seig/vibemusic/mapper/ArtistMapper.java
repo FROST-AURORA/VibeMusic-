@@ -33,4 +33,6 @@ public interface ArtistMapper extends BaseMapper<Artist> {
                                @Param("artistName") String artistName,
                                @Param("gender") Integer gender,
                                @Param("area") String area);
+    // 根据歌手名前缀查询歌手id
+    List<Long> getArtistIdsByNamePrefix(@Param("artistName") String artistName);
 }

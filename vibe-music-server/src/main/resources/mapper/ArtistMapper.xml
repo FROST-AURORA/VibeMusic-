@@ -73,4 +73,11 @@
         </where>
     </select>
 
+    <!-- 根据歌手名前缀查询歌手id -->
+    <select id="getArtistIdsByNamePrefix" resultType="java.lang.Long">
+        SELECT id
+        FROM tb_artist
+        WHERE name LIKE CONCAT(#{artistName}, '%')
+    </select>
+
 </mapper>

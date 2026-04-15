@@ -26,19 +26,9 @@ public interface SongMapper extends BaseMapper<Song> {
 
 
     // 查询歌曲id
-    @Select("""
-        SELECT s.id
-        FROM tb_song s
-        LEFT JOIN tb_artist a ON s.artist_id = a.id
-        WHERE 
-            (#{songName} IS NULL OR s.name LIKE CONCAT('%', #{songName}, '%'))
-            AND (#{artistName} IS NULL OR a.name LIKE CONCAT('%', #{artistName}, '%'))
-            AND (#{album} IS NULL OR s.album LIKE CONCAT('%', #{album}, '%'))
-        ORDER BY s.release_time DESC
-        """)
     IPage<Long> querySongIds(Page<Long> page,
                              @Param("songName") String songName,
-                             @Param("artistName") String artistName,
+                             @Param("artistIds") List<Long> artistIds,
                              @Param("album") String album);
 
     // 根据 id 批量获取歌曲列表（支持批量查询）

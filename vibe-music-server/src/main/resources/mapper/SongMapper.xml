@@ -80,5 +80,25 @@
         ORDER BY RAND()
         LIMIT #{limit}
     </select>
+    <!--根据条件获取歌曲id分页排序-->
+    <select id="querySongIds" resultType="java.lang.Long">
+        SELECT s.id
+        FROM tb_song s
+        <where>
+            <if test="songName != null and songName != ''">
+                AND s.name LIKE CONCAT(#{songName}, '%')
+            </if>
+            <if test="artistIds != null and artistIds.size() > 0">
+                AND s.artist_id IN
+                <foreach collection="artistIds" item="artistId" open="(" separator="," close=")">
+                    #{artistId}
+                </foreach>
+            </if>
+            <if test="album != null and album != ''">
+                AND s.album LIKE CONCAT(#{album}, '%')
+            </if>
+        </where>
+        ORDER BY s.release_time DESC, s.id DESC
+    </select>
 
 </mapper>

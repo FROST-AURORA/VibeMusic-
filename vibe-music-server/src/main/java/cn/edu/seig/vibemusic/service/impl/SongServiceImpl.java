@@ -61,6 +61,8 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements IS
     @Autowired
     private SongMapper songMapper;
     @Autowired
+    private ArtistMapper artistMapper;
+    @Autowired
     private UserFavoriteMapper userFavoriteMapper;
     @Autowired
     private StyleMapper styleMapper;
@@ -88,11 +90,15 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements IS
         // 使用 JwtUtil 工具类获取用户 ID（支持弱登录）
         Long userId = JwtUtil.getUserIdFromRequest(request);
         // 1.查 ID 分页
+        List<Long> artistIds = resolveArtistIds(songDTO.getArtistName());
+        if (artistIds != null && artistIds.isEmpty()) {
+            return Result.success(MessageConstant.DATA_NOT_FOUND, new PageResult<>(0L, null));
+        }
         Page<Long> page = new Page<>(songDTO.getPageNum(), songDTO.getPageSize());
         IPage<Long> idPage = songMapper.querySongIds(
                 page,
                 songDTO.getSongName(),
-                songDTO.getArtistName(),
+                artistIds,
                 songDTO.getAlbum());
         List<Long> songIds = idPage.getRecords();// 要返回的歌曲id
         if (songIds.isEmpty()) {
@@ -105,6 +111,15 @@ public class SongServiceImpl extends ServiceImpl<SongMapper, Song> implements IS
         // 3. 批量处理个性化状态 (关键优化：SMISMEMBER)
         cacheHelper.batchCheckSongLikeStatus(finalOrderedList, userId);
         return Result.success(new PageResult<>(idPage.getTotal(), finalOrderedList));
+    }
+
+    // 解析歌手名为歌手id
+    private List<Long> resolveArtistIds(String artistName) {
+        //检查 artistName 这个字符串是否有实际内容
+        if (artistName == null || artistName.isBlank()) {
+            return null;
+        }
+        return artistMapper.getArtistIdsByNamePrefix(artistName);
     }
 
 
