@@ -55,6 +55,10 @@ public class RsdisConstants {
     public static final long COMMENT_LIKE_CACHE_TTL_SECONDS = 86400L;
     public static final long COMMENT_LIKE_CACHE_RANDOM_OFFSET_SECONDS = 3600L;
 
+    // AI chat memory cache
+    public static final String AI_CHAT_MEMORY = "Ai:ChatMemory:";
+    public static final long AI_CHAT_MEMORY_TTL_DAYS = 7L;
+
     // Distributed lock TTL
     public static final long LOCK_TTL_SECONDS = 10L;
 }

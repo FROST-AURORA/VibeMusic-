@@ -25,6 +25,10 @@ const router = createRouter({
       component: () => import('@/pages/library/index.vue'),
     },
     {
+      path: '/assistant',
+      component: () => import('@/pages/assistant/index.vue'),
+    },
+    {
       path: '/artist',
       component: () => import('@/pages/artist/index.vue'),
     },
