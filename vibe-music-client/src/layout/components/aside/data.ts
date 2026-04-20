@@ -6,16 +6,21 @@ export const MenuData = [
   {
     title: '发现',
     children: [
+      {
+        title: '音乐助手',
+        icon: 'ri:robot-2-line',
+        router: '/assistant',
+      },
       { title: '曲库', icon: 'ri:music-2-line', router: '/library' },
       {
         title: '歌手',
         icon: 'ri:mic-line',
-        router: '/artist'
+        router: '/artist',
       },
       {
         title: '歌单',
         icon: 'ri:album-line',
-        router: '/playlist'
+        router: '/playlist',
       },
     ],
   },
@@ -26,7 +31,7 @@ export const MenuData = [
       {
         title: '个人中心',
         icon: 'mi:user',
-        router: '/user'
+        router: '/user',
       },
     ],
   },

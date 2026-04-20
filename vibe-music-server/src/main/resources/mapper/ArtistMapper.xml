@@ -77,7 +77,7 @@
     <select id="getArtistIdsByNamePrefix" resultType="java.lang.Long">
         SELECT id
         FROM tb_artist
-        WHERE name LIKE CONCAT(#{artistName}, '%')
+        WHERE name LIKE CONCAT('%', #{artistName}, '%')
     </select>
 
 </mapper>

@@ -50,6 +50,9 @@ public class JwtUtil {
      * @return userId 或 null（游客状态）
      */
     public static Long getUserIdFromRequest(HttpServletRequest request) {
+        if (request == null) {
+            return null;
+        }
         String token = request.getHeader("Authorization");
 
         // 1. 基础拦截：没有 Header 或 格式不对，直接判定为游客

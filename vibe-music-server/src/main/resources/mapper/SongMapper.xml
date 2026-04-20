@@ -86,7 +86,7 @@
         FROM tb_song s
         <where>
             <if test="songName != null and songName != ''">
-                AND s.name LIKE CONCAT(#{songName}, '%')
+                AND s.name LIKE CONCAT('%', #{songName}, '%')
             </if>
             <if test="artistIds != null and artistIds.size() > 0">
                 AND s.artist_id IN
@@ -95,7 +95,34 @@
                 </foreach>
             </if>
             <if test="album != null and album != ''">
-                AND s.album LIKE CONCAT(#{album}, '%')
+                AND s.album LIKE CONCAT('%', #{album}, '%')
+            </if>
+        </where>
+        ORDER BY s.release_time DESC, s.id DESC
+    </select>
+
+    <select id="querySongIdsForAi" resultType="java.lang.Long">
+        SELECT s.id
+        FROM tb_song s
+        <where>
+            <if test="songName != null and songName != ''">
+                AND s.name LIKE CONCAT('%', #{songName}, '%')
+            </if>
+            <if test="artistIds != null and artistIds.size() > 0">
+                AND s.artist_id IN
+                <foreach collection="artistIds" item="artistId" open="(" separator="," close=")">
+                    #{artistId}
+                </foreach>
+            </if>
+            <if test="album != null and album != ''">
+                AND s.album LIKE CONCAT('%', #{album}, '%')
+            </if>
+            <if test="styleNames != null and styleNames.size() > 0">
+                AND (
+                <foreach collection="styleNames" item="styleName" separator=" OR ">
+                    s.style LIKE CONCAT('%', #{styleName}, '%')
+                </foreach>
+                )
             </if>
         </where>
         ORDER BY s.release_time DESC, s.id DESC

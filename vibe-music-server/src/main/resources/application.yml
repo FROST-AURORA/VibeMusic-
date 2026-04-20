@@ -6,7 +6,6 @@ spring:
     username: root # 修改你的 MySQL 用户名
     password: 123456 # 修改你的 MySQL 密码
     type: com.alibaba.druid.pool.DruidDataSource # 配置连接池
-
   # Redis服务连接配置
   data:
     redis:
@@ -70,20 +69,44 @@ role-path-permissions:
   permissions:
     ROLE_ADMIN:
       - "/admin/"
+      - "/ai/"
     ROLE_USER:
       - "/user/"
       - "/playlist/"
       - "/artist/"
       - "/song/"
+      - "/ai/"
       - "/favorite/"
       - "/comment/"
       - "/banner/"
       - "/feedback/"
 
 minio:
-  endpoint: http://127.0.0.1:9090 # 修改你的 MinIO 端点
+  endpoint: http://192.168.100.128:9090 # 修改你的 MinIO 端点
   accessKey: minioadmin # 修改你的 MinIO Access Key
   secretKey: minioadmin # 修改你的 MinIO Secret Key
   bucket: vibe-music-data # 确认 Bucket 名称与你创建的一致
 
+# Langchain框架
+langchain4j:
+  open-ai:
+    chat-model:
+      base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+      api-key: sk-a5c9b22c65a54fe6a6ac218f0690355e
+      model-name: qwen3.6-plus
+      timeout: PT30S
+      temperature: 0.2
+      log-requests: true
+      log-responses: true
+    streaming-chat-model:
+      base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+      api-key: sk-a5c9b22c65a54fe6a6ac218f0690355e
+      model-name: qwen3.6-plus
+      timeout: PT30S
+      temperature: 0.2
+      log-requests: true
+      log-responses: true
 
+logging:
+  level:
+    com.app: debug

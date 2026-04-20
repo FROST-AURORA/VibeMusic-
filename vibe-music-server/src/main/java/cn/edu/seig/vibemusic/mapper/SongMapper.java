@@ -31,6 +31,13 @@ public interface SongMapper extends BaseMapper<Song> {
                              @Param("artistIds") List<Long> artistIds,
                              @Param("album") String album);
 
+    // AI 搜歌：在基础条件上额外支持风格过滤
+    IPage<Long> querySongIdsForAi(Page<Long> page,
+                                  @Param("songName") String songName,
+                                  @Param("artistIds") List<Long> artistIds,
+                                  @Param("album") String album,
+                                  @Param("styleNames") List<String> styleNames);
+
     // 根据 id 批量获取歌曲列表（支持批量查询）
     List<SongVO> getSongsByIdS(@Param("ids") List<Long> ids);
 
